@@ -137,11 +137,20 @@ if page == "Классификация отзывов":
     model_lstm.load_state_dict(torch.load("lstm/lstm_model.pth"))
     model_lstm.eval()
 
-    def text_to_vector(text):
+        # Проверка и добавление токена <UNK>, если он отсутствует
+    if '<UNK>' not in vocab_to_int:
+        vocab_to_int['<UNK>'] = len(vocab_to_int)  # Присвоение нового уникального индекса
+
+    # Проверка и добавление токена <PAD>, если он отсутствует
+    if '<PAD>' not in vocab_to_int:
+        vocab_to_int['<PAD>'] = len(vocab_to_int)  # Присвоение нового уникального индекса
+
+    def text_to_vector(text, max_length=SEQ_LEN):
         words = text.split()
-        vector = [vocab_to_int.get(word, vocab_to_int) for word in words]
-        return np.array(vector)
-    
+        vector = [vocab_to_int.get(word, vocab_to_int["<UNK>"]) for word in words][:max_length]
+        vector += [vocab_to_int["<PAD>"]] * (max_length - len(vector))  # Дополнение вектора
+        return np.array(vector, dtype=np.int64)  # Убедитесь, что тип данных int64
+
     def classify_review_lstm(review):
         # Векторизация отзыва
         review_vector = text_to_vector(review)
